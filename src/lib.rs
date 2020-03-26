@@ -124,7 +124,6 @@ fn batch_add(hash_list: &[&H256]) -> bool {
     }
     let mut ogq_tree:CompactMerkleTree = load_merkletree().expect("load merkletree error");
     for &h in hash_list.iter() {
-        EventBuilder::new().h256(h.clone()).string("test").notify();
         ogq_tree.append_hash(h.clone());
     }
     store_merkletree(&ogq_tree);
@@ -178,7 +177,6 @@ pub fn invoke() {
             sink.write(set_owner(&owner));
         },
         "batch_add" => {
-            EventBuilder::new().bytearray(&input).string("input").notify();
             let hash_list:Vec<&H256> = source.read().unwrap();
             sink.write(batch_add(hash_list.as_slice()));
         },
