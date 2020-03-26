@@ -83,8 +83,8 @@ fn get_root_inner(ogq_tree: &mut CompactMerkleTree) -> H256 {
             if i < 0 {
                 break;
             }
-            i -= 1;
             accum = ogq_tree.hash_children(&ogq_tree.hashes[i as usize], &accum);
+            i -= 1;
         }
         return accum;
     } else {
@@ -130,6 +130,16 @@ fn batch_add(hash_list: &[&H256]) -> bool {
     let root = get_root_inner(&mut ogq_tree);
     EventBuilder::new().h256(root).number(ogq_tree.tree_size as u128);
     return true
+}
+
+fn batch_add_back(hash_list: &[&H256], ogq_tree: &mut CompactMerkleTree) {
+    if hash_list.len() == 0 {
+        return
+    }
+    for &h in hash_list.iter() {
+        ogq_tree.append_hash(h.clone());
+    }
+    let root = get_root_inner(ogq_tree);
 }
 
 fn get_root() -> RootSize {
@@ -188,10 +198,14 @@ pub fn invoke() {
 }
 
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+#[test]
+fn batch_add_test() {
+    let h = H256::repeat_bytes(1);
+    let hash_list = vec![h];
+    let mtree = &mut CompactMerkleTree{
+        tree_size: 0u32,
+        hashes: vec![],
+    };
+    batch_add_back(hash_list.as_slice(), mtree);
+
 }
