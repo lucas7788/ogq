@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-ontio-std = {path="../ontio-cdk/ontio-std", features=["bump-alloc"]}
+ontio-std = {git="https://github.com/laizy/ontio-cdk.git", features=["bump-alloc"]}
 
 [features]
 mock = ["ontio-std/mock"]

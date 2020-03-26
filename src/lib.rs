@@ -2,7 +2,7 @@
 #![feature(proc_macro_hygiene)]
 extern crate ontio_std as ostd;
 use ostd::abi::{Encoder,EventBuilder, Sink, Source};
-use ostd::{database, runtime};
+use ostd::{database, runtime, console};
 use ostd::prelude::*;
 use ostd::macros::base58;
 
@@ -12,17 +12,18 @@ struct CompactMerkleTree {
 }
 
 fn load_merkletree() -> Option<CompactMerkleTree> {
-    let value = runtime::storage_read(merkletree_key)?;
-    let mut source = Source::new(&value);
-    let tree_size = source.read_u32().ok()?;
-    let len = source.read_u32().ok()?;
-    let mut hashes:Vec<H256> = Vec::with_capacity(len as usize);
-    for _i in 0..len {
-        let hash = source.read_h256().ok()?;
-        hashes.push(hash.clone());
+    if let Some(value) = runtime::storage_read(merkletree_key) {
+        let mut source = Source::new(&value);
+        let tree_size = source.read_u32().ok()?;
+        let len = source.read_u32().ok()?;
+        let mut hashes:Vec<H256> = Vec::with_capacity(len as usize);
+        for _i in 0..len {
+            let hash = source.read_h256().ok()?;
+            hashes.push(hash.clone());
+        }
+        return Some(CompactMerkleTree{ tree_size, hashes});
     }
-
-    return Some(CompactMerkleTree{ tree_size, hashes})
+    return Some(CompactMerkleTree{tree_size:0u32,hashes:vec![]});
 }
 
 fn store_merkletree(tree: &CompactMerkleTree) {
@@ -42,7 +43,7 @@ impl CompactMerkleTree {
         assert_ne!(self.tree_size, u32::max_value());
         let mut s = self.tree_size;
         loop {
-            if s%2==1 {
+            if s%2 != 1 {
                 break;
             }
             s = s/2;
@@ -75,15 +76,15 @@ const ADMIN: Address = base58!("ASWTacJZSwozPfjQAe4Bq2saMEZ3aEQK8j");
 
 fn get_root_inner(ogq_tree: &mut CompactMerkleTree) -> H256 {
     if ogq_tree.hashes.len() != 0 {
-        let mut l = ogq_tree.hashes.len();
-        let mut accum: H256 = ogq_tree.hashes[l - 1].clone();
+        let mut l = ogq_tree.hashes.len() as i32;
+        let mut accum: H256 = ogq_tree.hashes[(l - 1) as usize].clone();
         let mut i = l-2;
         loop {
             if i < 0 {
                 break;
             }
             i -= 1;
-            accum = ogq_tree.hash_children(&ogq_tree.hashes[i], &accum);
+            accum = ogq_tree.hash_children(&ogq_tree.hashes[i as usize], &accum);
         }
         return accum;
     } else {
